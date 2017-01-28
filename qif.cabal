@@ -11,7 +11,6 @@ maintainer:          awick@uhsure.com
 copyright:           2016
 category:            Finance
 build-type:          Simple
-extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 tested-with:         GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1, GHC == 8.0.2
 
@@ -38,11 +37,15 @@ test-suite test-qif-serialization
   build-depends:
                        attoparsec       >= 0.13  && < 0.15,
                        base             >= 4.7  && < 4.10,
-                       qif              >= 0.1  && < 0.5,
                        QuickCheck       >= 2.9  && < 3.0,
                        tasty            >= 0.11 && < 0.15,
                        tasty-hunit      >= 0.9  && < 0.12,
                        tasty-quickcheck >= 0.8  && < 0.12,
                        text             >= 1.2.2 && < 1.9,
-                       time             >= 1.7.0 && < 1.9
+                       time             >= 1.7.0 && < 1.9,
+                       qif
+
+source-repository head
+  type:     git
+  location: https://github.com/acw/qif.git
 

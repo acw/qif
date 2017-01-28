@@ -1,0 +1,5 @@
+*.qif
+dist/
+dist-newstyle/
+.cabal-sandbox/
+cabal.sandbox.config

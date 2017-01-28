@@ -1,5 +1,5 @@
 name:                qif
-version:             0.1.0.0
+version:             1.0.0
 synopsis:            A simple QIF file format parser / printer
 description:         A handy little library for dealing with this awful little
                      QIF files in your life.

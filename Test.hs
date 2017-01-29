@@ -9,6 +9,7 @@ import qualified Data.Text as S
 import           Data.Text.Lazy(Text)
 import           Data.Text.Lazy.Builder(Builder, toLazyText)
 import           Data.Time(Day(..), fromGregorian, addDays)
+import           Lens.Micro(set)
 import           Test.QuickCheck
 import           Test.Tasty(TestTree, testGroup, defaultMain)
 import           Test.Tasty.HUnit(testCase, (@=?))
@@ -120,29 +121,36 @@ testSecurity :: TestTree
 testSecurity =
   testGroup "Security Block" [
     testCase "Alaska Airlines"
-      (Security "Alaska Air Group, Inc" "ALK" Stock Nothing @=?
+      (security "Alaska Air Group, Inc" "ALK" Stock Nothing @=?
         runP parseSecurity "NAlaska Air Group, Inc\nSALK\nTStock\n^\n")
   , testCase "Vanguard S&P"
-      (Security "Vanguard S&P 500 Index,Investor Shares" "VFINX"
+      (security "Vanguard S&P 500 Index,Investor Shares" "VFINX"
                 MutualFund Nothing
          @=?
         runP parseSecurity
           "NVanguard S&P 500 Index,Investor Shares\nSVFINX\nTMutual Fund\n^\n")
   , testCase "Vanguard ETF"
-      (Security "Vanguard ETF" "VET" ETF (Just "House") @=?
+      (security "Vanguard ETF" "VET" ETF (Just "House") @=?
         runP parseSecurity "NVanguard ETF\nSVET\nTETF\nGHouse\n^\n")
   , testProperty "Security block serialization"
       (standardSerializer parseSecurity renderSecurity)
   ]
 
+security :: S.Text -> S.Text -> SecurityType -> Maybe S.Text -> Security
+security n t y g =
+  set secName   n $
+  set secTicker t $
+  set secType   y $
+  set secGoal   g emptySecurity
+
 testAccount :: TestTree
 testAccount =
   testGroup "Accounts" [
     testCase "Umpqua Account"
-      (Account "Umpqua Bank" BankAccount "Checking" Nothing Nothing 1234.12 @=?
+      (account "Umpqua Bank" BankAccount "Checking" Nothing Nothing 1234.12 @=?
         runP parseAccount "NUmpqua Bank\nDChecking\nX\nTBank\nB$1234.12\n^\n")
   , testCase "Blue Bank"
-      (Account "Blue Bank" CreditCardAccount "" (Just 40)
+      (account "Blue Bank" CreditCardAccount "" (Just 40)
                (Just (fromGregorian 2012 2 14)) (-520)
         @=?
          runP parseAccount
@@ -153,63 +161,109 @@ testAccount =
       (standardSerializer parseAccountHeader renderAccountHeader)
   ]
 
+account :: S.Text -> AccountType -> S.Text ->
+           Maybe Currency -> Maybe Day -> Currency ->
+           Account
+account n t d cl bd b =
+  set accountName        n  $
+  set accountType        t  $
+  set accountDescription d  $
+  set accountCreditLimit cl $
+  set accountBalanceDate bd $
+  set accountBalance     b  emptyAccount
+
 testCategory :: TestTree
 testCategory =
   testGroup "Categories" [
     testCase "Auto"
-      (Category "Auto" "Automobile-related expenses" Expense False Nothing Nothing @=?
+      (category "Auto" "Automobile-related expenses" Expense False Nothing Nothing @=?
         runP parseCategory "NAuto\nDAutomobile-related expenses\nE\n^\n")
   , testCase "Registration"
-      (Category "Registration" "" Expense True Nothing (Just 535) @=?
+      (category "Registration" "" Expense True Nothing (Just 535) @=?
         runP parseCategory "NRegistration\nD\nT\nE\nR535\n^\n")
   , testCase "Salary"
-      (Category "Salary" "Income" Income True Nothing Nothing @=?
+      (category "Salary" "Income" Income True Nothing Nothing @=?
         runP parseCategory "NSalary\nDIncome\nT\nI\n^\n")
   , testCase "Dinner"
-      (Category "Dinner" "Yum yum" Expense False (Just 200) Nothing @=?
+      (category "Dinner" "Yum yum" Expense False (Just 200) Nothing @=?
         runP parseCategory "NDinner\nDYum yum\nE\nB200.\n^\n")
   , testProperty "Category serialization"
       (standardSerializer parseCategory renderCategory)
   ]
 
+category :: S.Text -> S.Text -> CategoryKind -> Bool ->
+            Maybe Currency -> Maybe Word ->
+            Category
+category n d k itr ba tsi =
+  set catName            n   $
+  set catDescription     d   $
+  set catKind            k   $
+  set catIsTaxRelated    itr $
+  set catBudgetAmount    ba  $
+  set catTaxScheduleInfo tsi emptyCategory
+
 testTransaction :: TestTree
 testTransaction =
   testGroup "Transactions" [
     testCase "Roost"
-      (Transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
+      (transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
                    (Just "Dining") True False [] @=?
         (runP parseTransaction
           "D2/14/12\nPRoost\nMYay fun\nT-25\nCX\nLDining\n^\n"))
   , testCase "Uncleared Roost"
-      (Transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
+      (transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
                    (Just "Dining") False False [] @=?
         (runP parseTransaction
           "D2/14/12\nPRoost\nMYay fun\nT-25.\nLDining\n^\n"))
   , testCase "Business Roost"
-      (Transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
+      (transaction (fromGregorian 2012 2 14) "Roost" "Yay fun" (-25) Nothing
                    (Just "Dining") True True [] @=?
         (runP parseTransaction
           "D2/14/12\nPRoost\nMYay fun\nT-25.00\nCX\nF\nLDining\n^\n"))
   , testCase "Paycheck"
-      (Transaction (fromGregorian 2018 3 4) "Galois" "" 50 Nothing Nothing
-                   True False [SplitItem "" (-30) "Checking",
-                               SplitItem "" (-20) "Savings"] @=?
+      (transaction (fromGregorian 2018 3 4) "Galois" "" 50 Nothing Nothing
+                   True False [set entryAmount (-30) $
+                               set entryCategory "Checking" emptySplitItem,
+                               set entryAmount (-20) $
+                               set entryCategory "Savings" emptySplitItem] @=?
         (runP parseTransaction
          "D3/4/18\nPGalois\nM\nT50.0\nCX\nSChecking\nE\n$-30.0\nSSavings\nE\n$-20\n^\n"))
   , testProperty "Transaction serialization"
       (standardSerializer parseTransaction renderTransaction)
   ]
 
+transaction :: Day -> S.Text -> S.Text -> Currency ->
+               Maybe Word -> Maybe S.Text -> Bool -> Bool -> [SplitItem] ->
+               Transaction
+transaction d p m a n c l r s =
+  set entDate         d $
+  set entParty        p $
+  set entMemo         m $
+  set entAmount       a $
+  set entNumber       n $
+  set entCategory     c $
+  set entCleared      l $
+  set entReimbursable r $
+  set entSplits       s emptyTransaction
+
 testInvTransaction :: TestTree
 testInvTransaction =
   testGroup "Interest Transactions" [
     testCase "Dividend"
-      (Dividend (TradeInfo (fromGregorian 2065 7 7) "SEC" Nothing (Just 0) (Just 0) 0)
+      (Dividend (set tradeSecurity "SEC" $
+                 set tradeSharePrice Nothing $
+                 set tradeQuantity (Just 0) $
+                 set tradeCommission (Just 0) $
+                 set tradeTotalAmount 0 (emptyTrade (fromGregorian 2065 7 7)))
         @=?
          (runP parseInvTransaction
             "D7/7/65\nNDiv\nYSEC\nQ0\nO0.00\nT0\n^\n"))
   , testCase "Dividend, with share price"
-      (Dividend (TradeInfo (fromGregorian 2065 7 7) "SEC" (Just 0) (Just 0) (Just 0) 0)
+      (Dividend (set tradeSecurity "SEC" $
+                 set tradeSharePrice (Just 0) $
+                 set tradeQuantity (Just 0) $
+                 set tradeCommission (Just 0) $
+                 set tradeTotalAmount 0 (emptyTrade (fromGregorian 2065 7 7)))
         @=?
          (runP parseInvTransaction
             "D7/7/65\nNDiv\nYSEC\nI0\nQ0\nO0.00\nT0\n^\n"))
@@ -229,7 +283,7 @@ testLists =
   , testProperty  "Investment Entries"
       (standardSerializer parseInvestmentEntries renderInvestmentEntries)
   , testProperty  "Bank Entries"
-      (standardSerializer parseTransactionList renderTransactionList)
+      (standardSerializer parseBankEntryList renderBankEntryList)
   , testProperty  "Credit Card Entries"
       (standardSerializer parseCreditCardEntryList renderCreditCardEntryList)
   , testProperty  "Asset Entries"
@@ -277,8 +331,15 @@ instance Arbitrary SecurityType where
                          PreciousMetal, Commodity, StockOption, Other ]
 
 instance Arbitrary Security where
-  arbitrary = Security <$> arbitrary <*> arbitrary <*> arbitrary
-                       <*> arbitrary
+  arbitrary =
+    do n <- arbitrary
+       t <- arbitrary
+       y <- arbitrary
+       g <- arbitrary
+       return $ set secName   n
+              $ set secTicker t
+              $ set secType   y
+              $ set secGoal   g emptySecurity
 
 instance Arbitrary S.Text where
   arbitrary =
@@ -291,21 +352,48 @@ instance Arbitrary AccountType where
                          InvestmentAccount, AssetAccount, LiabilityAccount ]
 
 instance Arbitrary Account where
-  arbitrary = Account <$> arbitrary <*> arbitrary <*> arbitrary
-                      <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary =
+    do (n, t, d, cl, bd, b) <- arbitrary
+       return $ set accountName        n
+              $ set accountType        t
+              $ set accountDescription d
+              $ set accountCreditLimit cl
+              $ set accountBalanceDate bd
+              $ set accountBalance     b emptyAccount
 
 instance Arbitrary Category where
-  arbitrary = Category <$> arbitrary <*> arbitrary <*> elements [Income,Expense]
-                       <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary =
+    do k <- elements [Income, Expense]
+       (n, d, it, ba, ts) <- arbitrary
+       return $ set catName            n
+              $ set catDescription     d
+              $ set catKind            k
+              $ set catIsTaxRelated    it
+              $ set catBudgetAmount    ba
+              $ set catTaxScheduleInfo ts emptyCategory
 
 instance Arbitrary TradeInfo where
-  arbitrary = TradeInfo <$> arbitrary <*> arbitrary <*> arbitrary
-                        <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary =
+    do (d, s, p, q, c, a) <- arbitrary
+       day <- arbitrary
+       return $ set tradeDate        d
+              $ set tradeSecurity    s
+              $ set tradeSharePrice  p
+              $ set tradeQuantity    q
+              $ set tradeCommission  c
+              $ set tradeTotalAmount a (emptyTrade day)
 
 instance Arbitrary TransferInfo where
-  arbitrary = TransferInfo <$> arbitrary <*> arbitrary <*> arbitrary
-                           <*> arbitrary <*> arbitrary <*> arbitrary
-                           <*> arbitrary
+  arbitrary =
+    do (d, s, m, a, c, t, p) <- arbitrary
+       day <- arbitrary
+       return $ set transDate        d
+              $ set transSummary     s
+              $ set transMemo        m
+              $ set transAmount      a
+              $ set transCleared     c
+              $ set transAccount     t
+              $ set transSplits      p (emptyTransfer day)
 
 instance Arbitrary InvTransaction where
   arbitrary = oneof [ Buy      <$> arbitrary
@@ -316,9 +404,31 @@ instance Arbitrary InvTransaction where
                     ]
 
 instance Arbitrary SplitItem where
-  arbitrary = SplitItem <$> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary =
+    do (m, a, c) <- arbitrary
+       return $ set entryMemo     m
+              $ set entryAmount   a
+              $ set entryCategory c emptySplitItem
 
 instance Arbitrary Transaction where
-  arbitrary = Transaction <$> arbitrary <*> arbitrary <*> arbitrary
-                        <*> arbitrary <*> arbitrary <*> arbitrary
-                        <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary =
+    do (d,p,m,a,n,c,l,r,s) <- arbitrary
+       return $ set entDate         d
+              $ set entParty        p
+              $ set entMemo         m
+              $ set entAmount       a
+              $ set entNumber       n
+              $ set entCategory     c
+              $ set entCleared      l
+              $ set entReimbursable r
+              $ set entSplits       s emptyTransaction
+
+instance Arbitrary QIF where
+  arbitrary =
+    do (a, c, s, i, n) <- arbitrary
+       return $ set qifAccounts               a
+              $ set qifCategories             c
+              $ set qifSecurities             s
+              $ set qifInvestmentTransactions i
+              $ set qifNormalTransactions     n emptyQIF
+

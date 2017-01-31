@@ -1,5 +1,5 @@
 name:                qif
-version:             1.1.0
+version:             1.1.1
 synopsis:            A simple QIF file format parser / printer
 description:         A handy little library for dealing with this awful little
                      QIF files in your life.
@@ -27,7 +27,7 @@ library
                        microlens    >= 0.4.7 && < 0.6,
                        microlens-th >= 0.4.1 && < 0.6,
                        text         >= 1.2.2 && < 1.9,
-                       time         >= 1.7.0 && < 1.9
+                       time         >= 1.6.0 && < 1.9
 
 test-suite test-qif-serialization
   type:                exitcode-stdio-1.0

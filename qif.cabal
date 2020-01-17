@@ -23,7 +23,7 @@ library
   ghc-options:         -Wall
   build-depends:
                        attoparsec   >= 0.13  && < 0.15,
-                       base         >= 4.7   && < 4.10,
+                       base         >= 4.7   && < 4.13,
                        microlens    >= 0.4.7 && < 0.6,
                        microlens-th >= 0.4.1 && < 0.6,
                        text         >= 1.2.2 && < 1.9,
@@ -37,7 +37,7 @@ test-suite test-qif-serialization
   other-extensions:    OverloadedStrings
   build-depends:
                        attoparsec       >= 0.13  && < 0.15,
-                       base             >= 4.7  && < 4.10,
+                       base             >= 4.7  && < 4.13,
                        QuickCheck       >= 2.9  && < 3.0,
                        microlens        >= 0.4.7 && < 0.6,
                        tasty            >= 0.11 && < 0.15,

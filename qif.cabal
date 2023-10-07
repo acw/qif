@@ -26,7 +26,7 @@ library
                        base         >= 4.7   && < 4.19,
                        microlens    >= 0.4.7 && < 0.6,
                        microlens-th >= 0.4.1 && < 0.6,
-                       text         >= 1.2.2 && < 1.9,
+                       text         >= 1.2.2 && < 2.2,
                        time         >= 1.6.0 && < 1.9
 
 test-suite test-qif-serialization
@@ -43,7 +43,7 @@ test-suite test-qif-serialization
                        tasty            >= 0.11 && < 1.6,
                        tasty-hunit      >= 0.9  && < 0.12,
                        tasty-quickcheck >= 0.8  && < 0.12,
-                       text             >= 1.2.2 && < 1.9,
+                       text             >= 1.2.2 && < 2.2,
                        time             >= 1.7.0 && < 1.9,
                        qif
 

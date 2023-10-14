@@ -23,11 +23,11 @@ library
   ghc-options:         -Wall
   build-depends:
                        attoparsec   >= 0.13  && < 0.15,
-                       base         >= 4.7   && < 4.13,
+                       base         >= 4.7   && < 4.19,
                        microlens    >= 0.4.7 && < 0.6,
                        microlens-th >= 0.4.1 && < 0.6,
-                       text         >= 1.2.2 && < 1.9,
-                       time         >= 1.6.0 && < 1.9
+                       text         >= 1.2.2 && < 2.2,
+                       time         >= 1.6.0 && < 1.13
 
 test-suite test-qif-serialization
   type:                exitcode-stdio-1.0
@@ -37,14 +37,14 @@ test-suite test-qif-serialization
   other-extensions:    OverloadedStrings
   build-depends:
                        attoparsec       >= 0.13  && < 0.15,
-                       base             >= 4.7  && < 4.13,
+                       base             >= 4.7  && < 4.19,
                        QuickCheck       >= 2.9  && < 3.0,
                        microlens        >= 0.4.7 && < 0.6,
-                       tasty            >= 0.11 && < 0.15,
+                       tasty            >= 0.11 && < 1.6,
                        tasty-hunit      >= 0.9  && < 0.12,
                        tasty-quickcheck >= 0.8  && < 0.12,
-                       text             >= 1.2.2 && < 1.9,
-                       time             >= 1.7.0 && < 1.9,
+                       text             >= 1.2.2 && < 2.2,
+                       time             >= 1.7.0 && < 1.13,
                        qif
 
 source-repository head
